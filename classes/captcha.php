@@ -61,7 +61,7 @@ abstract class Captcha
 		if ( ! isset(Captcha::$instance))
 		{
 			// Load the configuration for this group
-			$config = Kohana::config('captcha')->get($group);
+			$config = self::_get_config($group);
 
 			// Set the captcha driver class name
 			$class = 'Captcha_'.ucfirst($config['style']);
@@ -95,7 +95,7 @@ abstract class Captcha
 		}
 
 		// Load and validate config group
-		if ( ! is_array($config = Kohana::config('captcha')->get($group)))
+		if ( ! is_array($config = self::_get_config($group)))
 			throw new Kohana_Exception('Captcha group not defined in :group configuration',
 					array(':group' => $group));
 
@@ -103,7 +103,7 @@ abstract class Captcha
 		if ($group !== 'default')
 		{
 			// Load and validate default config group
-			if ( ! is_array($default = Kohana::config('captcha')->get('default')))
+			if ( ! is_array($default = self::_get_config()))
 				throw new Kohana_Exception('Captcha group not defined in :group configuration',
 					array(':group' => 'default'));
 
@@ -434,10 +434,10 @@ abstract class Captcha
 			return '<img src="'.url::site('captcha/'.Captcha::$config['group']).'" width="'.Captcha::$config['width'].'" height="'.Captcha::$config['height'].'" alt="Captcha" class="captcha" />';
 
 		// Send the correct HTTP header
-        Request::instance()->headers['Content-Type'] = 'image/'.$this->image_type;
-        Request::instance()->headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0';
-        Request::instance()->headers['Pragma'] = 'no-cache';
-        Request::instance()->headers['Connection'] = 'close';
+		$this->_get_request()->response()->headers('Content-Type', 'image/'.$this->image_type);
+		$this->_get_request()->response()->headers('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
+		$this->_get_request()->response()->headers('Pragma', 'no-cache');
+		$this->_get_request()->response()->headers('Connection', 'close');
 
 		// Pick the correct output function
 		$function = 'image'.$this->image_type;
@@ -447,6 +447,40 @@ abstract class Captcha
 		imagedestroy($this->image);
 	}
 
+	/**
+	 * Return multiversional config
+	 * @param string $group
+	 * @return Array 
+	 */
+	protected static function _get_config($group = 'default') {
+		
+		$version = Kohana_Core::VERSION;
+		
+		if($version  == '3.2.0') {
+			$config = Kohana::$config->load('captcha')->get($group);
+		} else {
+			$config = Kohana::config('captcha')->get($group);
+		}
+		
+		return $config;
+	}
+	
+	/**
+	 *	Return multiversional request
+	 * @return Request 
+	 */
+	protected function _get_request() {
+		
+		$version = Kohana_Core::VERSION;
+		
+		if($version  == '3.2.0') {
+			$request = Request::initial();
+		} else {
+			$request = Request::instance();
+		}
+		
+		return $request;
+	}
 	/* DRIVER METHODS */
 
 	/**

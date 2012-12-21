@@ -1,6 +1,6 @@
-#Captcha for Kohana 3.x
+#Captcha for Kohana 3.2
 
-This is the Captcha library ported from Kohana 2.3.x to 3.x. Very little has changed API-wise, although there have been a few changes.
+This is the Captcha library ported from Kohana 3.0.x to 3.2. Very little has changed API-wise, although there have been a few changes.
 
 ##Getting Started
 
