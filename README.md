@@ -1,6 +1,8 @@
-#Captcha for Kohana 3.2
+#Captcha for Kohana 3.3
 
-This is the Captcha library ported from Kohana 3.0.x to 3.2. Very little has changed API-wise, although there have been a few changes.
+This is the Captcha library ported from Kohana 3.0.x to 3.3. Very little has changed API-wise, although there have been a few changes.
+
+One significant change is that filenames are now Title Case to conform with the PSR-0 standard adopted in Kohana 3.3.
 
 ##Getting Started
 
