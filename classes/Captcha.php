@@ -473,7 +473,7 @@ abstract class Captcha
 		
 		$version = Kohana_Core::VERSION;
 		
-		if($version  == '3.2.0') {
+		if (version_compare($version, '3.2.0') >= 0) {
 			$request = Request::initial();
 		} else {
 			$request = Request::instance();
