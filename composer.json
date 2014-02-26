@@ -1,5 +1,5 @@
 {
-	"name":        "yehudamond/kohana-captcha",
+	"name":        "yehudamond/captcha",
 	"type":        "kohana-module",
 	"description": "A captcha module for Kohana",
 	"require": {
