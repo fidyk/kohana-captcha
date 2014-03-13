@@ -12,39 +12,58 @@
 class Captcha_Riddle extends Captcha
 {
 	/**
-	 * @var string Captcha riddle
-	 */
-	private $riddle;
-
-	/**
 	 * Generates a new Captcha challenge.
 	 *
 	 * @return string The challenge answer
 	 */
 	public function generate_challenge()
 	{
-		// Load riddles from the current language
-		$riddles = Kohana::config('captcha.riddles');
+		// Load riddles from the current config
+		$riddles = self::_get_config(Captcha::$config['group'].'.riddles');
+
+		if (empty($riddles))
+		{
+			// Load riddles from the captcha config
+			$riddles = self::_get_config('riddles');
+		}
+
+		if (empty($riddles))
+		{
+			throw new Kohana_Exception('Captcha riddles not found');
+		}
 
 		// Pick a random riddle
 		$riddle = $riddles[array_rand($riddles)];
 
 		// Store the question for output
-		$this->riddle = $riddle[0];
+		$this->challenge = $riddle[0];
+		// Store answer
+		$this->answer = (string) $riddle[1];
 
 		// Return the answer
-		return (string) $riddle[1];
+		return $this->answer;
 	}
 
 	/**
-	 * Outputs the Captcha riddle.
+	 * Returns the HTML element.
 	 *
-	 * @param boolean $html HTML output
-	 * @return mixed
+	 * @return string
 	 */
-	public function render($html = TRUE)
+	public function html()
 	{
-		return $this->riddle;
+		// Output challenge
+		return $this->challenge;
+	}
+
+	/**
+	 * Outputs the Captcha.
+	 *
+	 * @param Response
+	 * @return void
+	 */
+	public function fill_response(Response $response)
+	{
+		$this->text_response($response);
 	}
 
 } // End Captcha Riddle Driver Class
