@@ -14,27 +14,23 @@ Instantiate using your own config group (other than 'default'):
 
 > $captcha = Captcha::instance('myconfig');
 
-Render a captcha:
+Render a captcha to Response object (somewhere in the controller action):
 
-> $captcha->render();
+> $captcha->render($this->response);
 
-or just:
+or render captcha to HTML tag or plain text string (for 'math' and 'riddle' styles):
 
-> $captcha;
+> $captcha->html();
 
 Validate the captcha:
 
 > Captcha::valid($_POST['captcha']);
 
-By default image-based captchas are rendered with HTML, the HTML is a very simple <img> tag. If you want to handle your own rendering of the captcha simply set the first parameter for render() to FALSE:
-
-> $captcha->render(FALSE);
-
 ##Captcha Styles
 
-* alpha
-* basic
-* black
-* math
-* riddle
-* word
+* alpha - Image based
+* basic - Image based
+* black - Image based
+* math - Text based
+* riddle - Text based
+* word - Image based
