@@ -19,21 +19,22 @@ class Captcha_Black extends Captcha
 	public function generate_challenge()
 	{
 		// Complexity setting is used as character count
-		$text = text::random('distinct', max(1, ceil(Captcha::$config['complexity'] / 1.5)));
-		
-		return $text;
+		$this->challenge = $this->answer = text::random('distinct', max(1, ceil(Captcha::$config['complexity'] / 1.5)));
+		return $this->answer;
 	}
 
 	/**
-	 * Outputs the Captcha image.
+	 * Draws the Captcha image.
 	 *
-	 * @param boolean $html HTML output
-	 * @return mixed
+	 * @return void
 	 */
 	public function render($html = TRUE)
 	{
-		// Creates a black image to start from
-		$this->image_create(Captcha::$config['background']);
+		if ( $this->image === NULL)
+		{
+			// Creates $this->image
+			$this->image_create(Captcha::$config['background']);
+		}
 
 		// Add random white/gray arcs, amount depends on complexity setting
 		$count = (Captcha::$config['width'] + Captcha::$config['height']) / 2;
@@ -66,9 +67,6 @@ class Captcha_Black extends Captcha
 		// Finally draw the foreground characters
 		$color = imagecolorallocate($this->image, 0, 0, 0);
 		imagefttext($this->image, $size, $angle, $x, $y, $color, $font, $this->response);
-
-		// Output
-		return $this->image_render($html);
 	}
 
 } // End Captcha Black Driver Class

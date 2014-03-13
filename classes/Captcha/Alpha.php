@@ -9,32 +9,20 @@
  * @copyright	(c) 2008-2010 Kohana Team
  * @license		http://kohanaphp.com/license.html
  */
-class Captcha_Alpha extends Captcha 
+class Captcha_Alpha extends Captcha_Basic
 {
 	/**
-	 * Generates a new Captcha challenge.
+	 * Draws the Captcha image.
 	 *
-	 * @return string The challenge answer
+	 * @return void
 	 */
-	public function generate_challenge()
+	public function draw()
 	{
-		// Complexity setting is used as character count
-		$text = text::random('distinct', max(1, Captcha::$config['complexity']));
-		
-		// Complexity setting is used as character count
-		return $text;
-	}
-
-	/**
-	 * Outputs the Captcha image.
-	 *
-	 * @param boolean $html Html output
-	 * @return mixed
-	 */
-	public function render($html = TRUE)
-	{
-		// Creates $this->image
-		$this->image_create(Captcha::$config['background']);
+		if ( $this->image === NULL)
+		{
+			// Creates $this->image
+			$this->image_create(Captcha::$config['background']);
+		}
 
 		// Add a random gradient
 		if (empty(Captcha::$config['background']))
@@ -53,15 +41,15 @@ class Captcha_Alpha extends Captcha
 		}
 
 		// Calculate character font-size and spacing
-		$default_size = min(Captcha::$config['width'], Captcha::$config['height'] * 2) / strlen($this->response);
-		$spacing = (int) (Captcha::$config['width'] * 0.9 / strlen($this->response));
+		$default_size = min(Captcha::$config['width'], Captcha::$config['height'] * 2) / strlen($this->challenge);
+		$spacing = (int) (Captcha::$config['width'] * 0.9 / strlen($this->challenge));
 
 		// Background alphabetic character attributes
 		$color_limit = mt_rand(96, 160);
 		$chars = 'ABEFGJKLPQRTVY';
 
 		// Draw each Captcha character with varying attributes
-		for ($i = 0, $strlen = strlen($this->response); $i < $strlen; $i++)
+		for ($i = 0, $strlen = strlen($this->challenge); $i < $strlen; $i++)
 		{
 			// Use different fonts if available
 			$font = Captcha::$config['fontpath'].Captcha::$config['fonts'][array_rand(Captcha::$config['fonts'])];
@@ -69,7 +57,7 @@ class Captcha_Alpha extends Captcha
 			$angle = mt_rand(-40, 20);
 			// Scale the character size on image height
 			$size = $default_size / 10 * mt_rand(8, 12);
-			$box = imageftbbox($size, $angle, $font, $this->response[$i]);
+			$box = imageftbbox($size, $angle, $font, $this->challenge[$i]);
 
 			// Calculate character starting coordinates
 			$x = $spacing / 4 + $i * $spacing;
@@ -80,16 +68,13 @@ class Captcha_Alpha extends Captcha
 			$color = imagecolorallocate($this->image, mt_rand(150, 255), mt_rand(200, 255), mt_rand(0, 255));
 
 			// Write text character to image
-			imagefttext($this->image, $size, $angle, $x, $y, $color, $font, $this->response[$i]);
+			imagefttext($this->image, $size, $angle, $x, $y, $color, $font, $this->challenge[$i]);
 
 			// Draw "ghost" alphabetic character
 			$text_color = imagecolorallocatealpha($this->image, mt_rand($color_limit + 8, 255), mt_rand($color_limit + 8, 255), mt_rand($color_limit + 8, 255), mt_rand(70, 120));
 			$char = $chars[mt_rand(0, 13)];
 			imagettftext($this->image, $size * 2, mt_rand(-45, 45), ($x - (mt_rand(5, 10))), ($y + (mt_rand(5, 10))), $text_color, $font, $char);
 		}
-
-		// Output
-		return $this->image_render($html);
 	}
 
 } // End Captcha Alpha Driver Class

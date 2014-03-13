@@ -12,11 +12,6 @@
 class Captcha_Math extends Captcha
 {
 	/**
-	 * @var string Captcha math exercise
-	 */
-	private $math_exercise;
-
-	/**
 	 * Generates a new Captcha challenge.
 	 *
 	 * @return string The challenge answer
@@ -44,21 +39,35 @@ class Captcha_Math extends Captcha
 		}
 
 		// Store the question for output
-		$this->math_exercise = implode(' + ', $numbers).' = ';
+		$this->challenge = implode(' + ', $numbers).' = ';
+
+		// Calc sum for answer
+		$this->answer = array_sum($numbers);
 
 		// Return the answer
-		return array_sum($numbers);
+		return $this->answer;
 	}
 
 	/**
-	 * Outputs the Captcha riddle.
+	 * Returns the HTML element.
 	 *
-	 * @param boolean $html HTML output
-	 * @return mixed
+	 * @return string
 	 */
-	public function render($html = TRUE)
+	public function html()
 	{
-		return $this->math_exercise;
+		// Output challenge
+		return $this->challenge;
+	}
+
+	/**
+	 * Outputs the Captcha.
+	 *
+	 * @param Response
+	 * @return void
+	 */
+	public function fill_response(Response $response)
+	{
+		$this->text_response($response);
 	}
 
 } // End Captcha Math Driver Class

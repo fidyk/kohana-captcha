@@ -36,9 +36,14 @@ abstract class Captcha
 	);
 
 	/**
+	 * @var string The challenge
+	 */
+	protected $challenge;
+
+	/**
 	 * @var string The correct Captcha challenge answer
 	 */
-	protected $response;
+	protected $answer;
 
 	/**
 	 * @var string Image resource identifier
@@ -60,17 +65,48 @@ abstract class Captcha
 	{
 		if ( ! isset(Captcha::$instance))
 		{
+			// No config group name given
+			if ( ! is_string($group))
+			{
+				$group = 'default';
+			}
+
 			// Load the configuration for this group
 			$config = self::_get_config($group);
 
+			// Load and validate config group
+			if ( ! is_array($config))
+				throw new Kohana_Exception('Captcha group not defined in :group configuration',
+					array(':group' => $group));
+
+			$style = Arr::get($config, 'style');
+			if (empty($style))
+			{
+				$default_config = self::_get_config();
+				if ( ! is_array($default_config))
+					throw new Kohana_Exception('Captcha group not defined in :group configuration',
+						array(':group' => 'default'));
+
+				$style = Arr::get($default_config, 'style');
+
+				if (empty($style))
+				{
+					throw new Kohana_Exception('Captcha style not defined in :group configuration',
+						array(':group' => $group));
+				}
+			}
+
 			// Set the captcha driver class name
-			$class = 'Captcha_'.ucfirst($config['style']);
+			$class = 'Captcha_'.ucfirst($style);
+
+			if ( ! class_exists($class))
+			{
+				throw new Kohana_Exception('Captcha driver for style :style not found',
+					array(':style' => $style));
+			}
 
 			// Create a new captcha instance
 			Captcha::$instance = $captcha = new $class($group);
-
-			// Save captcha response at shutdown
-			//register_shutdown_function(array($captcha, 'update_response_session'));
 		}
 
 		return Captcha::$instance;
@@ -147,28 +183,28 @@ abstract class Captcha
 		}
 
 		// Generate a new challenge
-		$this->response = $this->generate_challenge();
+		$this->generate_challenge();
 	}
 
 	/**
-	 * Update captcha response session variable.
+	 * Store captcha answer in the session variable.
 	 *
 	 * @return void
 	 */
-	public function update_response_session()
+	public function store_answer()
 	{
 		// Store the correct Captcha response in a session
-		Session::instance()->set('captcha_response', sha1(strtoupper($this->response)));
+		Session::instance()->set('captcha_answer', sha1(UTF8::strtoupper($this->answer)));
 	}
 
 	/**
 	 * Validates user's Captcha response and updates response counter.
 	 *
 	 * @staticvar integer $counted Captcha attempts counter
-	 * @param string $response User's captcha response
+	 * @param string $answer User's captcha answer
 	 * @return boolean
 	 */
-	public static function valid($response)
+	public static function valid($answer)
 	{
 		// Maximum one count per page load
 		static $counted;
@@ -178,7 +214,7 @@ abstract class Captcha
 			return TRUE;
 
 		// Challenge result
-		$result = (bool) (sha1(strtoupper($response)) === Session::instance()->get('captcha_response'));
+		$result = (bool) (sha1(UTF8::strtoupper($answer)) === Session::instance()->get('captcha_answer'));
 
 		// Increment response counter
 		if ($counted !== TRUE)
@@ -287,7 +323,7 @@ abstract class Captcha
 	 */
 	public function __toString()
 	{
-		return $this->render(TRUE);
+		return $this->html();
 	}
 
 	/**
@@ -342,7 +378,7 @@ abstract class Captcha
 
 			// Resize the image if needed
 			if (imagesx($this->background_image) !== Captcha::$config['width']
-			    or imagesy($this->background_image) !== Captcha::$config['height'])
+			    OR imagesy($this->background_image) !== Captcha::$config['height'])
 			{
 				imagecopyresampled
 				(
@@ -422,66 +458,90 @@ abstract class Captcha
 	}
 
 	/**
-	 * Returns the img html element or outputs the image to the browser.
+	 * Outputs the image to the response.
 	 *
-	 * @param boolean $html Output as HTML
-	 * @return mixed HTML, string or void
+	 * @param Response
+	 * @return void
 	 */
-	public function image_render($html)
+	public function image_response(Response $response)
 	{
-		// Output html element
-		if ($html === TRUE)
-			return '<img src="'.url::site('captcha/'.Captcha::$config['group']).'" width="'.Captcha::$config['width'].'" height="'.Captcha::$config['height'].'" alt="Captcha" class="captcha" />';
-
-		// Send the correct HTTP header
-		$this->_get_request()->response()->headers('Content-Type', 'image/'.$this->image_type);
-		$this->_get_request()->response()->headers('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0');
-		$this->_get_request()->response()->headers('Pragma', 'no-cache');
-		$this->_get_request()->response()->headers('Connection', 'close');
-
 		// Pick the correct output function
 		$function = 'image'.$this->image_type;
+		ob_start();
 		$function($this->image);
+		$image_data = ob_get_clean();
+		$response->body($image_data);
 
 		// Free up resources
 		imagedestroy($this->image);
+
+		// Set the correct HTTP headers
+		$response
+			->headers('Content-Type', 'image/'.$this->image_type)
+			->headers('Content-Length', strlen($image_data))
+			->headers('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0')
+			->headers('Pragma', 'no-cache')
+			->headers('Connection', 'close');
+	}
+
+
+	/**
+	 * Outputs the challenge as plain text to the response.
+	 *
+	 * @param Response
+	 * @return void
+	 */
+	public function text_response(Response $response)
+	{
+		$data = (string) $this->challenge;
+		$response->body($data);
+
+		// Set the correct HTTP headers
+		$response
+			->headers('Content-Type', 'text/plain')
+			->headers('Content-Length', strlen($data))
+			->headers('Cache-Control', 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0')
+			->headers('Pragma', 'no-cache')
+			->headers('Connection', 'close');
 	}
 
 	/**
-	 * Return multiversional config
+	 * Returns group config
 	 * @param string $group
-	 * @return Array 
+	 * @return Array
 	 */
-	protected static function _get_config($group = 'default') {
-		
-		$version = Kohana_Core::VERSION;
-		
-		if (version_compare($version, '3.2.0') >= 0) {
-			$config = Kohana::$config->load('captcha')->get($group);
-		} else {
-			$config = Kohana::config('captcha')->get($group);
-		}
-		
-		return $config;
+	protected static function _get_config($group = 'default')
+	{
+		return Kohana::$config->load('captcha')->get($group);
 	}
-	
+
 	/**
-	 *	Return multiversional request
-	 * @return Request 
+	 * Outputs the Captcha challenge to the response.
+	 *
+	 * @param Response
+	 * @return void
 	 */
-	protected function _get_request() {
-		
-		$version = Kohana_Core::VERSION;
-		
-		if (version_compare($version, '3.2.0') >= 0) {
-			$request = Request::initial();
-		} else {
-			$request = Request::instance();
-		}
-		
-		return $request;
+	public function render(Response $response)
+	{
+		$this->store_answer();
+		$this->fill_response($response);
 	}
-	/* DRIVER METHODS */
+
+
+	/**
+	 * Returns the HTML element.
+	 *
+	 * @return string
+	 */
+	abstract public function html();
+
+	/**
+	 * Outputs the captcha to the response.
+	 *
+	 * @param Response
+	 * @return void
+	 */
+	abstract public function fill_response(Response $response);
 
 	/**
 	 * Generate a new Captcha challenge.
@@ -489,13 +549,5 @@ abstract class Captcha
 	 * @return string The challenge answer
 	 */
 	abstract public function generate_challenge();
-
-	/**
-	 * Output the Captcha challenge.
-	 *
-	 * @param boolean $html Render output as HTML
-	 * @return mixed
-	 */
-	abstract public function render($html = TRUE);
 
 } // End Captcha Class
