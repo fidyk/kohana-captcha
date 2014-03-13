@@ -1,6 +1,7 @@
 {
 	"name":        "fidyk/captcha",
 	"type":        "kohana-module",
+	"keywords":    ["kohana","captcha"],
 	"description": "A captcha module for Kohana",
 	"require": {
 		"composer/installers": "~1.0",
@@ -8,9 +9,9 @@
 		"php":                 ">=5.3.3"
 	},
 	"extra": {
-                "branch-alias": {
-                        "dev-3.3/develop": "3.3.x-dev",
-                        "dev-3.4/develop": "3.4.x-dev"
-                }
-        }
+		"branch-alias": {
+			"dev-3.3/develop": "3.3.x-dev",
+			"dev-3.4/develop": "3.4.x-dev"
+		}
+	}
 }
