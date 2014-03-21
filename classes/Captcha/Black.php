@@ -19,7 +19,7 @@ class Captcha_Black extends Captcha
 	public function generate_challenge()
 	{
 		// Complexity setting is used as character count
-		$this->challenge = $this->answer = text::random('distinct', max(1, ceil(Captcha::$config['complexity'] / 1.5)));
+		$this->challenge = $this->answer = Text::random('distinct', max(1, ceil(Captcha::$config['complexity'] / 1.5)));
 		return $this->answer;
 	}
 

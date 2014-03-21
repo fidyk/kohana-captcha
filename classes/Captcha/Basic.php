@@ -19,7 +19,7 @@ class Captcha_Basic extends Captcha
 	public function generate_challenge()
 	{
 		// Complexity setting is used as character count
-		$this->challenge = $this->answer = text::random('distinct', max(1, Captcha::$config['complexity']));
+		$this->challenge = $this->answer = Text::random('distinct', max(1, Captcha::$config['complexity']));
 		return $this->answer;
 	}
 
